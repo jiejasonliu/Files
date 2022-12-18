@@ -25,7 +25,7 @@ using System.Collections.Generic;
 
 namespace Files.Uwp.UserControls.Widgets
 {
-    public sealed partial class RecentFilesWidget : UserControl, IWidgetItemModel
+    public sealed partial class RecentFilesWidget : UserControl, IWidgetItemModel, INotifyPropertyChanged
     {
         private IUserSettingsService UserSettingsService { get; } = Ioc.Default.GetService<IUserSettingsService>();
 
@@ -36,6 +36,8 @@ namespace Files.Uwp.UserControls.Widgets
         public delegate void RecentFileInvokedEventHandler(object sender, PathNavigationEventArgs e);
 
         public event RecentFileInvokedEventHandler RecentFileInvoked;
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         private ObservableCollection<RecentItem> recentItemsCollection = new ObservableCollection<RecentItem>();
 
@@ -53,6 +55,20 @@ namespace Files.Uwp.UserControls.Widgets
 
         public bool IsWidgetSettingEnabled => UserSettingsService.WidgetsSettingsService.ShowRecentFilesWidget;
 
+        private bool isRecentFilesDisabledInWindows = false;
+        public bool IsRecentFilesDisabledInWindows
+        {
+            get => isRecentFilesDisabledInWindows;
+            internal set
+            {
+                if (isRecentFilesDisabledInWindows != value)
+                {
+                    isRecentFilesDisabledInWindows = value;
+                    NotifyPropertyChanged(nameof(IsRecentFilesDisabledInWindows));
+                }
+            }
+        }
+
         public RecentFilesWidget()
         {
             InitializeComponent();
@@ -61,7 +77,7 @@ namespace Files.Uwp.UserControls.Widgets
             refreshRecentsCTS = new CancellationTokenSource();
 
             // recent files could have changed while widget wasn't loaded
-            _ = App.RecentItemsManager.UpdateRecentFilesAsync();
+            _ = RefreshWidget();
 
             App.RecentItemsManager.RecentFilesChanged += Manager_RecentFilesChanged;
         }
@@ -74,7 +90,6 @@ namespace Files.Uwp.UserControls.Widgets
                 await UpdateRecentsList(e);
             });
         }
-
         private void OpenFileLocation_Click(object sender, RoutedEventArgs e)
         {
             var flyoutItem = sender as MenuFlyoutItem;
@@ -198,8 +213,13 @@ namespace Files.Uwp.UserControls.Widgets
 
         public async Task RefreshWidget()
         {
-            // if files changed, event is fired to update widget
             await App.RecentItemsManager.UpdateRecentFilesAsync();
+            IsRecentFilesDisabledInWindows = await App.RecentItemsManager.CheckIsRecentFilesEnabled() is false;
+        }
+
+        private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         public void Dispose() 

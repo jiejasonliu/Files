@@ -2,6 +2,7 @@
 using Files.Shared;
 using Files.Shared.Enums;
 using Files.Shared.Extensions;
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -198,6 +199,25 @@ namespace Files.FullTrust.MessageHandlers
                         return response;
                     });
                     await Win32API.SendMessageAsync(connection, unpinFileResponse, message.Get("RequestID", (string)null));
+                    break;
+
+                case "CheckRecentFilesEnabled":
+                    var checkRecentFilesEnabledResponse = await Win32API.StartSTATask(() =>
+                    {
+                        try
+                        {
+                            using var subkey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer");
+                            bool showRecentValue = Convert.ToBoolean(subkey.GetValue("ShowRecent", false));
+
+                            response.Add("Enabled", showRecentValue);
+                        }
+                        catch (Exception e)
+                        {
+                            Program.Logger.Warn(e);
+                        }
+                        return response;
+                    });
+                    await Win32API.SendMessageAsync(connection, checkRecentFilesEnabledResponse, message.Get("RequestID", (string)null));
                     break;
             }
         }

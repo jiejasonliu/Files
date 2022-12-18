@@ -6,7 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:fs="using:Files.Uwp.Filesystem"
     xmlns:helpers="using:Files.Uwp.Helpers"
-    xmlns:local="using:Files.Uwp.UserControls.Widgets"
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
     mc:Ignorable="d">
 
@@ -15,6 +15,15 @@
         MinHeight="200"
         Orientation="Vertical"
         Spacing="4">
+        <muxc:InfoBar
+            Margin="0,0,0,12"
+            IsClosable="False"
+            IsIconVisible="True"
+            IsOpen="True"
+            Message="{helpers:ResourceString Name=RecentFilesDisabledOnWindowsWarning}"
+            Severity="Warning"
+            Visibility="{x:Bind IsRecentFilesDisabledInWindows, Mode=OneWay}"
+            />
         <TextBlock
             x:Name="RecentItemDescription"
             HorizontalAlignment="Stretch"

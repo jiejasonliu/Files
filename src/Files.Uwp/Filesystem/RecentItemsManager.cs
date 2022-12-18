@@ -1,18 +1,14 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
 using Files.Shared;
-using Files.Shared.Enums;
 using Files.Uwp.Helpers;
-using Microsoft.Toolkit.Uwp;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.AppService;
 using Windows.Foundation.Collections;
-using Windows.UI.Xaml.Media.Imaging;
 
 namespace Files.Uwp.Filesystem
 {
@@ -48,6 +44,14 @@ namespace Files.Uwp.Filesystem
                     return recentFolders.ToList().AsReadOnly();
                 }
             }
+        }
+
+        public async Task<bool> CheckIsRecentFilesEnabled() {
+            var (status, response) = await SendRecentItemsActionForResponse("CheckRecentFilesEnabled");
+
+            return status == AppServiceResponseStatus.Success &&
+                   response.TryGetValue("Enabled", out var success) &&
+                   (bool)success;
         }
 
         /// <summary>
