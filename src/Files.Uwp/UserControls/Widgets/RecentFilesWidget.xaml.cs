@@ -45,8 +45,6 @@ namespace Files.Uwp.UserControls.Widgets
 
         private CancellationTokenSource refreshRecentsCTS;
 
-        private EmptyRecentsText Empty { get; set; } = new EmptyRecentsText();
-
         public string WidgetName => nameof(RecentFilesWidget);
 
         public string AutomationProperties => "RecentFilesWidgetAutomationProperties/Name".GetLocalized();
@@ -54,6 +52,21 @@ namespace Files.Uwp.UserControls.Widgets
         public string WidgetHeader => "RecentFiles".GetLocalized();
 
         public bool IsWidgetSettingEnabled => UserSettingsService.WidgetsSettingsService.ShowRecentFilesWidget;
+
+
+        private Visibility emptyRecentsTextVisibility = Visibility.Collapsed;
+        public Visibility EmptyRecentsTextVisibility
+        {
+            get => emptyRecentsTextVisibility;
+            internal set
+            {
+                if (emptyRecentsTextVisibility != value)
+                {
+                    emptyRecentsTextVisibility = value;
+                    NotifyPropertyChanged(nameof(EmptyRecentsTextVisibility));
+                }
+            }
+        }
 
         private bool isRecentFilesDisabledInWindows = false;
         public bool IsRecentFilesDisabledInWindows
@@ -122,7 +135,7 @@ namespace Files.Uwp.UserControls.Widgets
                 refreshRecentsCTS.Cancel();
                 refreshRecentsCTS = new CancellationTokenSource();
 
-                Empty.Visibility = Visibility.Collapsed;
+                EmptyRecentsTextVisibility = Visibility.Collapsed;
 
                 switch (args.Action)
                 {
@@ -140,7 +153,7 @@ namespace Files.Uwp.UserControls.Widgets
                 // update chevron if there aren't any items
                 if (recentItemsCollection.Count == 0)
                 {
-                    Empty.Visibility = Visibility.Visible;
+                    EmptyRecentsTextVisibility = Visibility.Visible;
                 }
             }
             catch (Exception ex)
@@ -202,7 +215,7 @@ namespace Files.Uwp.UserControls.Widgets
 
                 if (success)
                 {
-                    Empty.Visibility = Visibility.Visible;
+                    EmptyRecentsTextVisibility = Visibility.Visible;
                 }
             }
             finally
@@ -225,34 +238,6 @@ namespace Files.Uwp.UserControls.Widgets
         public void Dispose() 
         {
             App.RecentItemsManager.RecentFilesChanged -= Manager_RecentFilesChanged;
-        }
-    }
-
-    public class EmptyRecentsText : INotifyPropertyChanged
-    {
-        private Visibility visibility;
-
-        public Visibility Visibility
-        {
-            get
-            {
-                return visibility;
-            }
-            set
-            {
-                if (value != visibility)
-                {
-                    visibility = value;
-                    NotifyPropertyChanged(nameof(Visibility));
-                }
-            }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
