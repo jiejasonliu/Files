@@ -1,5 +1,6 @@
 using Files.App.Helpers;
 using Files.App.Shell;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -8,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Vanara.PInvoke;
 using Vanara.Windows.Shell;
+using Windows.ApplicationModel.AppService;
 
 namespace Files.App.Filesystem
 {
@@ -202,11 +204,22 @@ namespace Files.App.Filesystem
 			}
 		}
 
-		/// <summary>
-		/// Returns whether two RecentItem enumerables have the same order.
-		/// This function depends on `RecentItem` implementing IEquatable.
-		/// </summary>
-		private bool RecentItemsOrderEquals(IEnumerable<RecentItem> oldOrder, IEnumerable<RecentItem> newOrder)
+        public bool CheckIsRecentFilesEnabled()
+        {
+            using var subkey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer");
+			if (subkey is null)
+			{
+				return false;
+			}
+
+			return Convert.ToBoolean(subkey.GetValue("ShowRecent", false));
+        }
+
+        /// <summary>
+        /// Returns whether two RecentItem enumerables have the same order.
+        /// This function depends on `RecentItem` implementing IEquatable.
+        /// </summary>
+        private bool RecentItemsOrderEquals(IEnumerable<RecentItem> oldOrder, IEnumerable<RecentItem> newOrder)
 		{
 			return oldOrder != null && newOrder != null && oldOrder.SequenceEqual(newOrder);
 		}

@@ -17,8 +17,8 @@ using System.Threading.Tasks;
 
 namespace Files.App.UserControls.Widgets
 {
-	public sealed partial class RecentFilesWidget : UserControl, IWidgetItemModel
-	{
+	public sealed partial class RecentFilesWidget : UserControl, IWidgetItemModel, INotifyPropertyChanged
+    {
 		private IUserSettingsService UserSettingsService { get; } = Ioc.Default.GetRequiredService<IUserSettingsService>();
 
 		public delegate void RecentFilesOpenLocationInvokedEventHandler(object sender, PathNavigationEventArgs e);
@@ -29,7 +29,9 @@ namespace Files.App.UserControls.Widgets
 
 		public event RecentFileInvokedEventHandler RecentFileInvoked;
 
-		private ObservableCollection<RecentItem> recentItemsCollection = new ObservableCollection<RecentItem>();
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private ObservableCollection<RecentItem> recentItemsCollection = new ObservableCollection<RecentItem>();
 
 		private SemaphoreSlim refreshRecentsSemaphore;
 
@@ -45,17 +47,31 @@ namespace Files.App.UserControls.Widgets
 
 		public bool IsWidgetSettingEnabled => UserSettingsService.AppearanceSettingsService.ShowRecentFilesWidget;
 
-		public RecentFilesWidget()
+        private bool isRecentFilesDisabledInWindows = false;
+        public bool IsRecentFilesDisabledInWindows
+        {
+            get => isRecentFilesDisabledInWindows;
+            internal set
+            {
+                if (isRecentFilesDisabledInWindows != value)
+                {
+                    isRecentFilesDisabledInWindows = value;
+                    NotifyPropertyChanged(nameof(IsRecentFilesDisabledInWindows));
+                }
+            }
+        }
+
+        public RecentFilesWidget()
 		{
 			InitializeComponent();
 
 			refreshRecentsSemaphore = new SemaphoreSlim(1, 1);
 			refreshRecentsCTS = new CancellationTokenSource();
 
-			// recent files could have changed while widget wasn't loaded
-			_ = App.RecentItemsManager.UpdateRecentFilesAsync();
+            // recent files could have changed while widget wasn't loaded
+            _ = RefreshWidget();
 
-			App.RecentItemsManager.RecentFilesChanged += Manager_RecentFilesChanged;
+            App.RecentItemsManager.RecentFilesChanged += Manager_RecentFilesChanged;
 		}
 
 		private async void Manager_RecentFilesChanged(object sender, NotifyCollectionChangedEventArgs e)
@@ -188,13 +204,19 @@ namespace Files.App.UserControls.Widgets
 			}
 		}
 
-		public Task RefreshWidget()
+		public async Task RefreshWidget()
 		{
 			// if files changed, event is fired to update widget
-			return App.RecentItemsManager.UpdateRecentFilesAsync();
-		}
+			await App.RecentItemsManager.UpdateRecentFilesAsync();
+            IsRecentFilesDisabledInWindows = App.RecentItemsManager.CheckIsRecentFilesEnabled() is false;
+        }
 
-		public void Dispose()
+        private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public void Dispose()
 		{
 			App.RecentItemsManager.RecentFilesChanged -= Manager_RecentFilesChanged;
 		}
